@@ -1,3 +1,5 @@
+**This is the older version of this analysis. The latest can be found [here](https://github.com/dimroc/etl-language-comparison/tree/master)**
+
 ## ETL Language Showdown
 This repo implements the same map reduce ETL (Extract-Transform-Load) task in multiple languages
 in an effort to compare language productivity, terseness and readability. The performance comparisons should not be taken seriously. If anything,
