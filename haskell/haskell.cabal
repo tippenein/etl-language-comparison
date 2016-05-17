@@ -23,6 +23,7 @@ library
     , text
     , filepath
     , Glob
+    , containers
     , pipes-text
     , pipes-safe
     , pipes-files
