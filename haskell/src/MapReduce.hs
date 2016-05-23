@@ -1,71 +1,56 @@
 {-# LANGUAGE OverloadedStrings #-}
 module MapReduce where
 
-import Control.Monad (void)
-import qualified Data.Map.Strict as Map
-import qualified Data.Text as T
-import Pipes
-import Pipes.Prelude as P
-import Pipes.Prelude.Text as Text
-import Pipes.Safe
-import qualified Pipes.Text as Text
-import qualified Pipes.Text.IO as Text
-import System.FilePath.Glob
-import System.IO
+import           Control.Monad        (void)
+import qualified Data.Map.Strict      as Map
+import qualified Data.Text            as T
+import           Pipes
+import           Pipes.Prelude        as P
+import           Pipes.Prelude.Text   as Text
+import           Pipes.Safe
+import qualified Pipes.Text           as Text
+import qualified Pipes.Text.IO        as Text
+import           System.FilePath.Glob
+import           System.IO
 
-doIt :: IO ()
-doIt = return () -- printMap =<< doPipe
+-- doIt :: IO ()
+-- doIt = printMap =<< doPipe
 
--- doPipe :: ()
--- doPipe =
---   printMap =<< foldIntoMap hoodProducer
+doPipe :: IO (Map.Map Text.Text Int)
+doPipe = runEffect hoodProducer
 
--- foldIntoMap producer = P.fold $ (\t -> Map.insertWith (+) t 1 producer) initialMap id
--- foldIntoMap producer = P.fold $ Map.insertWith initialMap (+ 1) producer
+foldIntoMap :: (MonadSafe m) => Producer Text.Text m () -> Map.Map Text.Text Int
+foldIntoMap = P.fold incHood Map.empty id
+  where
+    incHood m hood = Map.insertWith (+) hood 1 m
 
--- hoodProducer :: P.Producer Text.Text () Text.Text ()
--- hoodProducer :: Proxy () Text.Text () Text.Text (SafeT IO) r
-hoodProducer :: IO ()
+hoodProducer :: Effect IO (Map.Map Text.Text Int)
 hoodProducer =
-  runSafeT $ runEffect $
           getInputFiles
       >-> mapper
-      >-> P.take 5
-      -- >-> sortByFreqAndHood
-      >-> Text.stdout
-  -- >~ openFile "something.txt" WriteMode >>= P.toHandle
+      >-> foldIntoMap
 
+getInputFiles :: (MonadSafe m) => Producer Text.Text m Text.Text
 getInputFiles = do
   globbed <- liftIO $ globDir1 (compile "tweets_*") "../tmp/tweets"
   for (each globbed) Text.readFileLn
 
--- Producer Text.Text () [Text.Text]
-type TProducer r = Proxy () Text.Text () Text.Text (SafeT IO) r
-
-mapper :: Proxy () Text.Text () Text.Text (SafeT IO) r
+mapper :: (MonadSafe m) => Pipe Text.Text Text.Text m Text.Text
 mapper = P.filter (\line -> "knicks" `T.isInfixOf` line)
      >-> P.map (second . T.split ((==) '\t'))
-
-
-initialMap :: Map.Map T.Text Int
-initialMap = Map.empty
-
 
 printMap :: Map.Map Text.Text Int -> ()
 printMap = void $ Map.traverseWithKey (\k v -> Prelude.print (k,v))
 
--- P.fold (+) 0 id process
-
--- fold :: (x -> a -> x) -> x -> (x -> b) -> Producer a m () -> m b
-
 -- writeFileWith res = Text.writeFile "../tmp/haskell_output" totals
--- foldrWithKey :: (k -> a -> b -> b) -> b -> Map k a -> b
--- sortByFreqAndHood :: Map.Map Text.Text Int -> Text.Text
--- sortByFreqAndHood = Map.foldrWithKey f ""
---   where
---     f k a result = result ++ "(" ++ Prelude.show $ Text.pack k ++ ":" ++ Prelude.show $ Text.pack a ++ ")"
+-- writeToFile p = p >~ openFile "something.txt" WriteMode >>= P.toHandle
 
 second :: [a] -> a
 second (_:y:_) = y
 second _ = error "this list ain't right"
 
+-- Map.insertWith :: Ord k => (a -> a -> a) -> k -> a -> Map k a -> Map k a
+-- P.fold :: Monad m => (x -> a -> x) -> x -> (x -> b) -> Producer a m () -> m b
+
+      -- >-> P.take 5
+      -- >-> Text.stdout
