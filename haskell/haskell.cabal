@@ -26,7 +26,6 @@ library
     , containers
     , pipes-text
     , pipes-safe
-    , pipes-files
   default-language:    Haskell2010
 
 executable haskell
