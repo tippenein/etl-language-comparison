@@ -1,5 +1,8 @@
 module Main where
 
 import MapReduce
+import System.Environment
 
-main = doIt
+main = do
+  result <- doIt Nothing
+  print result

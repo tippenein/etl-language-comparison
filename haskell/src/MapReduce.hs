@@ -3,6 +3,7 @@ module MapReduce where
 
 import Control.Monad (void)
 import qualified Data.Map.Strict as Map
+import Data.Monoid ((<>))
 import qualified Data.Text as T
 import Pipes
 import Pipes.Prelude as P
@@ -15,24 +16,26 @@ import System.IO
 
 type HoodMap = Map.Map Text.Text Integer
 
-doIt :: IO ()
-doIt = do
-  map <- runSafeT doPipe
-  return $ printMap map
--- doIt :: MonadSafe m => m ()
--- doIt = printMap =<< doPipe
+showHood :: HoodMap -> T.Text
+showHood = Map.foldl' aggr ""
+  where
+    aggr :: T.Text -> Integer -> T.Text
+    aggr k v = " - " <> k <> " - " <> "\n"
 
-doPipe :: (MonadSafe m) => m HoodMap
-doPipe = foldIntoMap hoodProducer
+doIt :: Maybe Int -> IO T.Text
+doIt amount = do
+  hmap <- runSafeT $ foldIntoMap $ hoodProducer amount
+  return $ showHood hmap
 
 foldIntoMap :: (MonadSafe m) => Producer Text.Text m () -> m HoodMap
 foldIntoMap = P.fold incHood (Map.empty :: HoodMap) id
   where incHood m hood = Map.insertWith (+) hood 1 m
 
-hoodProducer :: (MonadSafe m) => Producer Text.Text m ()
-hoodProducer =
-          getInputFiles
-      >-> mapper
+hoodProducer :: (MonadSafe m) => Maybe Int -> Producer Text.Text m ()
+hoodProducer amount =
+  case amount of
+    Nothing -> getInputFiles >-> mapper
+    Just n -> getInputFiles >-> mapper >-> P.take n
 
 getInputFiles :: (MonadSafe m) => Producer Text.Text m ()
 getInputFiles = do
@@ -41,20 +44,7 @@ getInputFiles = do
 
 mapper :: (MonadSafe m) => Pipe Text.Text Text.Text m ()
 mapper = P.filter (\line -> "knicks" `T.isInfixOf` line)
-     >-> P.map (second . T.split ('\t' ==))
-
-printMap :: HoodMap -> ()
-printMap = void $ Map.traverseWithKey $ curry Prelude.print --(\k v -> Prelude.print (k,v))
+     >-> P.map (T.takeWhile (/= '\t') . T.dropWhile (/= '\t'))
 
 -- writeFileWith res = Text.writeFile "../tmp/haskell_output" totals
 -- writeToFile p = p >~ openFile "something.txt" WriteMode >>= P.toHandle
-
-second :: [a] -> a
-second (_:y:_) = y
-second _ = error "this list ain't right"
-
--- Map.insertWith :: Ord k => (a -> a -> a) -> k -> a -> Map k a -> Map k a
--- P.fold :: Monad m => (x -> a -> x) -> x -> (x -> b) -> Producer a m () -> m b
-
-      -- >-> P.take 5
-      -- >-> Text.stdout
