@@ -1,0 +1,6 @@
+#!/bin/bash
+
+cd haskell && stack build
+
+export TIMEFORMAT=%R
+time stack exec haskell

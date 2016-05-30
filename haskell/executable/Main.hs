@@ -1,8 +1,6 @@
 module Main where
 
-import MapReduce
+import qualified MapReduce
 import System.Environment
 
-main = do
-  result <- doIt Nothing
-  print result
+main = MapReduce.main

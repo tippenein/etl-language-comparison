@@ -24,6 +24,15 @@ library
     , filepath
     , Glob
     , containers
+    , async
+    , list-t
+    , stringsearch
+    , mtl
+    , stm-containers
+    , bytestring-lexing
+    , directory
+    , stm
+    , bytestring
     , pipes-text
     , pipes-safe
   default-language:    Haskell2010
@@ -31,18 +40,9 @@ library
 executable haskell
   hs-source-dirs:      executable
   main-is:             Main.hs
-  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
+  ghc-options:         -O2 -threaded -rtsopts -with-rtsopts=-N
   build-depends:       base
                      , haskell
-  default-language:    Haskell2010
-
-test-suite haskell-test
-  type:                exitcode-stdio-1.0
-  hs-source-dirs:      test
-  main-is:             Spec.hs
-  build-depends:       base
-                     , haskell
-  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   default-language:    Haskell2010
 
 source-repository head

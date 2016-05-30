@@ -1,50 +1,60 @@
 {-# LANGUAGE OverloadedStrings #-}
+
 module MapReduce where
 
-import Control.Monad (void)
-import qualified Data.Map.Strict as Map
-import Data.Monoid ((<>))
-import qualified Data.Text as T
-import Pipes
-import Pipes.Prelude as P
-import Pipes.Prelude.Text as Text
-import Pipes.Safe
-import qualified Pipes.Text as Text
-import qualified Pipes.Text.IO as Text
-import System.FilePath.Glob
-import System.IO
+import Data.Foldable (traverse_)
+import System.FilePath ((</>))
+import System.FilePath.Glob (compile, globDir1)
 
-type HoodMap = Map.Map Text.Text Integer
+import qualified Control.Concurrent.Async as Async
+import qualified Control.Concurrent.STM as STM
+import qualified Data.ByteString as ByteString
+import qualified Data.ByteString.Lazy as ByteString.Lazy
+import qualified Data.ByteString.Lazy.Char8 as ByteString.Lazy.Char8
+import qualified Data.ByteString.Search as Search
+import qualified ListT
+import qualified STMContainers.Map as Map
+import qualified System.Directory as Directory
 
-showHood :: HoodMap -> T.Text
-showHood = Map.foldl' aggr ""
+parseFile :: ByteString.Lazy.ByteString -> [ByteString.Lazy.ByteString]
+parseFile bytes0 =
+    [ neighborhood line
+    | line <- ByteString.Lazy.Char8.lines bytes0
+    , match line
+    ]
   where
-    aggr :: T.Text -> Integer -> T.Text
-    aggr k v = " - " <> k <> " - " <> "\n"
+    lower w8 = if 65 <= w8 && w8 < 91 then w8 + 32 else w8
 
-doIt :: Maybe Int -> IO T.Text
-doIt amount = do
-  hmap <- runSafeT $ foldIntoMap $ hoodProducer amount
-  return $ showHood hmap
+    match =
+          not
+        . null
+        . Search.indices "knicks"
+        . ByteString.map lower
+        . ByteString.Lazy.toStrict
 
-foldIntoMap :: (MonadSafe m) => Producer Text.Text m () -> m HoodMap
-foldIntoMap = P.fold incHood (Map.empty :: HoodMap) id
-  where incHood m hood = Map.insertWith (+) hood 1 m
+    neighborhood =
+          ByteString.Lazy.takeWhile (/= 9)
+        . ByteString.Lazy.drop 1
+        . ByteString.Lazy.dropWhile (/= 9)
 
-hoodProducer :: (MonadSafe m) => Maybe Int -> Producer Text.Text m ()
-hoodProducer amount =
-  case amount of
-    Nothing -> getInputFiles >-> mapper
-    Just n -> getInputFiles >-> mapper >-> P.take n
+main :: IO ()
+main = do
+    files <- globDir1 (compile "tweets_*") "../tmp/tweets"
 
-getInputFiles :: (MonadSafe m) => Producer Text.Text m ()
-getInputFiles = do
-  globbed <- liftIO $ globDir1 (compile "tweets_*") "../tmp/tweets"
-  for (each globbed) Text.readFileLn
+    m <- Map.newIO
 
-mapper :: (MonadSafe m) => Pipe Text.Text Text.Text m ()
-mapper = P.filter (\line -> "knicks" `T.isInfixOf` line)
-     >-> P.map (T.takeWhile (/= '\t') . T.dropWhile (/= '\t'))
+    let increment key = STM.atomically (do
+            x <- Map.lookup key m
+            case x of
+                Nothing -> Map.insert 1 key m
+                Just n  -> n' `seq` Map.insert n' key m  where n' = n + 1 )
 
--- writeFileWith res = Text.writeFile "../tmp/haskell_output" totals
--- writeToFile p = p >~ openFile "something.txt" WriteMode >>= P.toHandle
+    let processFile file = Async.Concurrently (do
+            bytes <- ByteString.Lazy.readFile file
+
+            traverse_ increment (parseFile bytes) )
+
+    Async.runConcurrently (traverse_ processFile files)
+
+    kvs <- STM.atomically (ListT.toList (Map.stream m))
+    traverse_ print kvs
