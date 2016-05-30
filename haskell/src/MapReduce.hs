@@ -2,19 +2,22 @@
 
 module MapReduce where
 
+import Control.Monad.IO.Class
 import Data.Foldable (traverse_)
 import System.FilePath ((</>))
 import System.FilePath.Glob (compile, globDir1)
 
 import qualified Control.Concurrent.Async as Async
 import qualified Control.Concurrent.STM as STM
+import Data.Binary as Binary
 import qualified Data.ByteString as ByteString
 import qualified Data.ByteString.Lazy as ByteString.Lazy
 import qualified Data.ByteString.Lazy.Char8 as ByteString.Lazy.Char8
 import qualified Data.ByteString.Search as Search
+import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
 import qualified ListT
 import qualified STMContainers.Map as Map
-import qualified System.Directory as Directory
 
 parseFile :: ByteString.Lazy.ByteString -> [ByteString.Lazy.ByteString]
 parseFile bytes0 =
@@ -37,6 +40,8 @@ parseFile bytes0 =
         . ByteString.Lazy.drop 1
         . ByteString.Lazy.dropWhile (/= 9)
 
+intToBs = T.encodeUtf8 . T.pack . show
+
 main :: IO ()
 main = do
     files <- globDir1 (compile "tweets_*") "../tmp/tweets"
@@ -54,7 +59,19 @@ main = do
 
             traverse_ increment (parseFile bytes) )
 
+    let glue r (k, v) = return (ByteString.concat [ r
+                          , intToBs v
+                          , " - "
+                          , ByteString.Lazy.Char8.toStrict k
+                          , "\n"
+                          ])
+
     Async.runConcurrently (traverse_ processFile files)
 
-    kvs <- STM.atomically (ListT.toList (Map.stream m))
-    traverse_ print kvs
+    -- kvs <- STM.atomically (ListT.toList (Map.stream m))
+    -- traverse_ print kvs
+    -- fold :: (Monad m, MonadTransUncons t) => (r -> a -> m r) -> r -> t m a -> m r
+    fileContents <- STM.atomically (ListT.fold glue "" (Map.stream m))
+    -- print fileContents
+    ByteString.writeFile "../tmp/haskell_results.txt" fileContents
+
