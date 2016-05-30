@@ -1,0 +1,65 @@
+	Sat May 28 22:47 2016 Time and Allocation Profiling Report  (Final)
+
+	   haskell +RTS -N -p -K100M -RTS
+
+	total time  =       30.98 secs   (30977 ticks @ 1000 us, 1 processor)
+	total alloc = 18,086,389,512 bytes  (excludes profiling overheads)
+
+COST CENTRE     MODULE                    %time %alloc
+
+stream          MapReduce                  80.6   94.2
+readTextDevice  Data.Text.Internal.IO      19.1    2.0
+unstream/resize Data.Text.Internal.Fusion   0.3    3.8
+
+
+                                                                 individual     inherited
+COST CENTRE        MODULE                      no.     entries  %time %alloc   %time %alloc
+
+MAIN               MAIN                        176           0    0.0    0.0   100.0  100.0
+ main              MapReduce                   354           0    0.0    0.0    99.9  100.0
+  toMap.step       MapReduce                   374        7341    0.0    0.0     0.0    0.0
+  stream           MapReduce                   360           0   80.6   94.2    99.9  100.0
+   readTextDevice  Data.Text.Internal.IO       369      629184   19.1    2.0    19.1    2.0
+   unstream/resize Data.Text.Internal.Fusion   364     1774917    0.3    3.8     0.3    3.8
+ CAF:main1         Main                        350           0    0.0    0.0     0.0    0.0
+  main             Main                        352           1    0.0    0.0     0.0    0.0
+ CAF:main1         MapReduce                   348           0    0.0    0.0     0.0    0.0
+  main             MapReduce                   353           1    0.0    0.0     0.0    0.0
+ CAF:main4         MapReduce                   347           0    0.0    0.0     0.0    0.0
+  main             MapReduce                   355           0    0.0    0.0     0.0    0.0
+   stream          MapReduce                   357           0    0.0    0.0     0.0    0.0
+ CAF:main5         MapReduce                   346           0    0.0    0.0     0.0    0.0
+  main             MapReduce                   358           0    0.0    0.0     0.0    0.0
+ CAF:toMap         MapReduce                   345           0    0.0    0.0     0.0    0.0
+  toMap            MapReduce                   359           1    0.0    0.0     0.0    0.0
+ CAF:main6         MapReduce                   343           0    0.0    0.0     0.0    0.0
+  stream           MapReduce                   356           1    0.0    0.0     0.0    0.0
+ CAF:a3_r9i5       MapReduce                   342           0    0.0    0.0     0.0    0.0
+  stream           MapReduce                   365           0    0.0    0.0     0.0    0.0
+ CAF:a2_r9i4       MapReduce                   341           0    0.0    0.0     0.0    0.0
+  stream           MapReduce                   366           0    0.0    0.0     0.0    0.0
+   unstream/resize Data.Text.Internal.Fusion   368           1    0.0    0.0     0.0    0.0
+ CAF:a1_r9i3       MapReduce                   340           0    0.0    0.0     0.0    0.0
+  stream           MapReduce                   361           0    0.0    0.0     0.0    0.0
+   unstream/resize Data.Text.Internal.Fusion   363           2    0.0    0.0     0.0    0.0
+ CAF:lvl5_r9hS     MapReduce                   338           0    0.0    0.0     0.0    0.0
+  stream           MapReduce                   367           0    0.0    0.0     0.0    0.0
+ CAF:lvl4_r9hR     MapReduce                   337           0    0.0    0.0     0.0    0.0
+  stream           MapReduce                   362           0    0.0    0.0     0.0    0.0
+ CAF:lvl3_r9hQ     MapReduce                   336           0    0.0    0.0     0.0    0.0
+  stream           MapReduce                   370           0    0.0    0.0     0.0    0.0
+   unstream/resize Data.Text.Internal.Fusion   372           1    0.0    0.0     0.0    0.0
+ CAF:lvl_r9hM      MapReduce                   335           0    0.0    0.0     0.0    0.0
+  stream           MapReduce                   371           0    0.0    0.0     0.0    0.0
+ CAF               Turtle.Prelude              331           0    0.0    0.0     0.0    0.0
+ CAF               Filesystem.Path.Rules       325           0    0.0    0.0     0.0    0.0
+ CAF               Filesystem.Path.Internal    324           0    0.0    0.0     0.0    0.0
+ CAF               Data.Text.Array             279           0    0.0    0.0     0.0    0.0
+ CAF               Data.Text.Internal          275           0    0.0    0.0     0.0    0.0
+ CAF               GHC.Conc.Signal             229           0    0.0    0.0     0.0    0.0
+ CAF               GHC.IO.Encoding             222           0    0.0    0.0     0.0    0.0
+ CAF               GHC.IO.Encoding.Iconv       220           0    0.0    0.0     0.0    0.0
+ CAF               GHC.IO.FD                   214           0    0.0    0.0     0.0    0.0
+ CAF               GHC.IO.Handle.FD            212           0    0.0    0.0     0.0    0.0
+ CAF               GHC.IO.Handle.Text          210           0    0.0    0.0     0.0    0.0
+ CAF               GHC.Event.Thread            185           0    0.0    0.0     0.0    0.0
